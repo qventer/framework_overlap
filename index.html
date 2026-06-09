@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework Control Overlap Explorer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f6;
+    --surface: #ffffff;
+    --surface2: #f2f2ef;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --text-faint: #9e9e98;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --blue-mid: #B5D4F4;
+    --teal: #0F6E56;
+    --teal-light: #E1F5EE;
+    --teal-mid: #9FE1CB;
+    --amber: #7A4A08;
+    --amber-light: #FAEEDA;
+    --amber-mid: #FAC775;
+    --accent: #185FA5;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #181816;
+      --surface: #232320;
+      --surface2: #2c2c28;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.15);
+      --text: #f0f0ec;
+      --text-muted: #a0a09a;
+      --text-faint: #6a6a64;
+      --blue: #85B7EB;
+      --blue-light: #0C2840;
+      --blue-mid: #0C447C;
+      --teal: #5DCAA5;
+      --teal-light: #04342C;
+      --teal-mid: #085041;
+      --amber: #EF9F27;
+      --amber-light: #412402;
+      --amber-mid: #633806;
+      --accent: #85B7EB;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
+  .logo-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .header-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-strong);
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* ── Main layout ── */
+  main { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Selector card ── */
+  .selector-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .selector-card h2 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1rem;
+  }
+  .selectors {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .sel-wrap {
+    flex: 1;
+    min-width: 180px;
+  }
+  .sel-wrap label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-faint);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  select {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+  }
+  select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .vs-pill {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-faint);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
+  }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; line-height: 1.3; }
+  .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
+  .sv-blue  { color: #185FA5; }
+  .sv-teal  { color: #0F6E56; }
+  .sv-amber { color: #854F0B; }
+  .sv-purple{ color: #534AB7; }
+  @media (prefers-color-scheme: dark) {
+    .sv-blue  { color: #85B7EB; }
+    .sv-teal  { color: #5DCAA5; }
+    .sv-amber { color: #EF9F27; }
+    .sv-purple{ color: #AFA9EC; }
+  }
+
+  /* ── Venn card ── */
+  .venn-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.5rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+  #venn { display: block; width: 100%; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ── Detail grid ── */
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+  .detail-col {
+    padding: 1.25rem;
+    border-right: 1px solid var(--border);
+  }
+  .detail-col:last-child { border-right: none; }
+  @media (max-width: 700px) {
+    .detail-col { border-right: none; border-bottom: 1px solid var(--border); }
+    .detail-col:last-child { border-bottom: none; }
+  }
+  .col-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+    letter-spacing: -0.01em;
+  }
+  .col-title.ct-blue  { color: #185FA5; border-color: #B5D4F4; }
+  .col-title.ct-teal  { color: #0F6E56; border-color: #9FE1CB; }
+  .col-title.ct-amber { color: #854F0B; border-color: #FAC775; }
+  @media (prefers-color-scheme: dark) {
+    .col-title.ct-blue  { color: #85B7EB; border-color: #0C447C; }
+    .col-title.ct-teal  { color: #5DCAA5; border-color: #085041; }
+    .col-title.ct-amber { color: #EF9F27; border-color: #633806; }
+  }
+  .domain-block { margin-bottom: 12px; }
+  .domain-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-faint);
+    margin-bottom: 5px;
+  }
+  .ctrl-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .ctrl-tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: default;
+    white-space: nowrap;
+    position: relative;
+  }
+  .ctrl-tag:hover .tooltip {
+    display: block;
+  }
+  .tag-blue   { background: var(--blue-light);  color: #0C447C; }
+  .tag-teal   { background: var(--teal-light);  color: #085041; }
+  .tag-amber  { background: var(--amber-light); color: #633806; }
+  @media (prefers-color-scheme: dark) {
+    .tag-blue   { color: #B5D4F4; }
+    .tag-teal   { color: #9FE1CB; }
+    .tag-amber  { color: #FAC775; }
+  }
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--surface);
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .empty-msg {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* ── Domain coverage chart ── */
+  .coverage-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .coverage-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1.25rem;
+  }
+  .domain-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .domain-name {
+    width: 150px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+  }
+  .bar-seg { height: 100%; transition: width 0.3s ease; }
+  .bar-label { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 11px;
+    color: var(--text-faint);
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="8" cy="12" r="6"/><circle cx="16" cy="12" r="6"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">Framework Overlap Explorer</div>
+      <div class="logo-sub">Control mapping across 14 frameworks</div>
+    </div>
+  </div>
+  <div class="header-badge">47 controls &nbsp;·&nbsp; 13 domains &nbsp;·&nbsp; 91 pairings</div>
+</header>
+
+<main>
+
+  <!-- Selectors -->
+  <div class="selector-card">
+    <h2>Select two frameworks to compare</h2>
+    <div class="selectors">
+      <div class="sel-wrap">
+        <label>Framework A</label>
+        <select id="fw1"></select>
+      </div>
+      <div class="vs-pill">vs</div>
+      <div class="sel-wrap">
+        <label>Framework B</label>
+        <select id="fw2"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label" id="lbl1">Framework A only</div>
+      <div class="stat-value sv-blue" id="only1">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Shared controls</div>
+      <div class="stat-value sv-teal" id="shared">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label" id="lbl2">Framework B only</div>
+      <div class="stat-value sv-amber" id="only2">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Overlap</div>
+      <div class="stat-value sv-purple" id="pct">—</div>
+    </div>
+  </div>
+
+  <!-- Venn -->
+  <div class="venn-card">
+    <canvas id="venn" height="240"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#378ADD;opacity:0.6;"></div><span id="leg1">Framework A</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75;opacity:0.8;"></div><span>Shared overlap</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF9F27;opacity:0.6;"></div><span id="leg2">Framework B</span></div>
+    </div>
+  </div>
+
+  <!-- Domain coverage bars -->
+  <div class="coverage-card">
+    <div class="coverage-title">Overlap by domain</div>
+    <div id="domain-bars"></div>
+    <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--text-faint);">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#378ADD;opacity:0.6;margin-right:4px;vertical-align:middle;"></span>A only</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1D9E75;opacity:0.8;margin-right:4px;vertical-align:middle;"></span>Shared</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#EF9F27;opacity:0.6;margin-right:4px;vertical-align:middle;"></span>B only</span>
+    </div>
+  </div>
+
+  <!-- Detail lists -->
+  <div class="detail-card">
+    <div class="detail-grid">
+      <div class="detail-col">
+        <div class="col-title ct-blue" id="title1">Framework A only</div>
+        <div id="list1"></div>
+      </div>
+      <div class="detail-col">
+        <div class="col-title ct-teal">Shared controls</div>
+        <div id="listO"></div>
+      </div>
+      <div class="detail-col">
+        <div class="col-title ct-amber" id="title2">Framework B only</div>
+        <div id="list2"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Framework Control Overlap Explorer &nbsp;·&nbsp; 47 controls across GDPR, SOC 2 T1/T2, ISO 27001, NIST CSF, COBIT 5, King IV, SWIFT CSCF, CIS v8.1, ISO 22301, PCI DSS v4.1, POPIA, FSCA JS1 &amp; JS2<br>
+  Y = fully addressed &nbsp;·&nbsp; P = partially addressed &nbsp;·&nbsp; Overlap includes both Y and P mappings
+</footer>
+
+<script>
+const FRAMEWORKS = [
+  "GDPR","SOC2 T1","SOC2 T2","ISO 27001","NIST CSF","COBIT 5",
+  "KING IV","SWIFT CSCF","CIS v8.1","ISO 22301","PCI DSS v4.1","POPIA","FSCA JS1","FSCA JS2"
+];
+
+const FW_DISPLAY = {
+  "GDPR":"GDPR","SOC2 T1":"SOC 2 Type 1","SOC2 T2":"SOC 2 Type 2",
+  "ISO 27001":"ISO 27001","NIST CSF":"NIST CSF","COBIT 5":"COBIT 5",
+  "KING IV":"King IV","SWIFT CSCF":"SWIFT CSCF","CIS v8.1":"CIS v8.1",
+  "ISO 22301":"ISO 22301","PCI DSS v4.1":"PCI DSS v4.1","POPIA":"POPIA",
+  "FSCA JS1":"FSCA JS1","FSCA JS2":"FSCA JS2"
+};
+
+const CONTROLS = [
+  {d:"Governance & Risk",id:"GRM-01",n:"Information Security Policy",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Governance & Risk",id:"GRM-02",n:"Roles & Responsibilities",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Governance & Risk",id:"GRM-03",n:"Risk Assessment & Treatment",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Governance & Risk",id:"GRM-04",n:"Compliance & Legal Obligations",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Governance & Risk",id:"GRM-05",n:"Board & Executive Oversight",m:{GDPR:"P","SOC2 T1":"P","SOC2 T2":"P","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"P","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Access Control",id:"ACI-01",n:"User Access Management",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Access Control",id:"ACI-02",n:"Privileged Access Management",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Access Control",id:"ACI-03",n:"Multi-Factor Authentication",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Access Control",id:"ACI-04",n:"Least Privilege & Segregation of Duties",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Access Control",id:"ACI-05",n:"Access Reviews & Recertification",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Data Protection",id:"DPP-01",n:"Data Classification & Inventory",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"P","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Data Protection",id:"DPP-02",n:"Encryption at Rest & In Transit",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Data Protection",id:"DPP-03",n:"Data Retention & Disposal",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"P","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Data Protection",id:"DPP-04",n:"Data Subject Rights",m:{GDPR:"Y","SOC2 T1":"P","SOC2 T2":"P","ISO 27001":"P","NIST CSF":"N","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"N","CIS v8.1":"N","ISO 22301":"N","PCI DSS v4.1":"N","POPIA":"Y","FSCA JS1":"P","FSCA JS2":"P"}},
+  {d:"Data Protection",id:"DPP-05",n:"Data Loss Prevention (DLP)",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"P","FSCA JS2":"P"}},
+  {d:"Data Protection",id:"DPP-06",n:"Privacy Impact Assessments",m:{GDPR:"Y","SOC2 T1":"P","SOC2 T2":"P","ISO 27001":"P","NIST CSF":"P","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"N","CIS v8.1":"N","ISO 22301":"N","PCI DSS v4.1":"N","POPIA":"Y","FSCA JS1":"P","FSCA JS2":"P"}},
+  {d:"Asset Management",id:"ASM-01",n:"Asset Inventory & Ownership",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Asset Management",id:"ASM-02",n:"Configuration Management (CMDB)",m:{GDPR:"N","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Asset Management",id:"ASM-03",n:"Software / Application Inventory",m:{GDPR:"N","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Vulnerability Mgmt",id:"VPM-01",n:"Vulnerability Scanning & Assessments",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Vulnerability Mgmt",id:"VPM-02",n:"Patch & Update Management",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Vulnerability Mgmt",id:"VPM-03",n:"Penetration Testing",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Security Monitoring",id:"SIR-01",n:"Security Monitoring & SIEM",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Security Monitoring",id:"SIR-02",n:"Incident Management & Response",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Security Monitoring",id:"SIR-03",n:"Breach Notification & Reporting",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Security Monitoring",id:"SIR-04",n:"Log Management & Audit Trails",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Network Security",id:"NIS-01",n:"Network Segmentation & Firewall",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Network Security",id:"NIS-02",n:"Secure Configuration Baselines",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Network Security",id:"NIS-03",n:"Anti-Malware & Endpoint Protection",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Network Security",id:"NIS-04",n:"Remote Access Security (VPN/Zero Trust)",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Third-Party",id:"TPS-01",n:"Third-Party Risk Assessment",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Third-Party",id:"TPS-02",n:"Vendor Contracts & SLAs",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Third-Party",id:"TPS-03",n:"Ongoing Third-Party Monitoring",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"BCP / DR",id:"BCD-01",n:"Business Continuity Planning",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"BCP / DR",id:"BCD-02",n:"Disaster Recovery & RTO/RPO",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"BCP / DR",id:"BCD-03",n:"Backup & Recovery Testing",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"BCP / DR",id:"BCD-04",n:"Crisis Communication",m:{GDPR:"P","SOC2 T1":"P","SOC2 T2":"P","ISO 27001":"P","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"P","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"HR Security",id:"HRS-01",n:"Security Awareness Training",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"HR Security",id:"HRS-02",n:"Background Verification & Screening",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"P","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"HR Security",id:"HRS-03",n:"Disciplinary Process & Acceptable Use",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"P","CIS v8.1":"P","ISO 22301":"P","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Physical Security",id:"PES-01",n:"Physical Access Controls",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Physical Security",id:"PES-02",n:"Environmental Controls",m:{GDPR:"N","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"P","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"P","FSCA JS2":"P"}},
+  {d:"Physical Security",id:"PES-03",n:"Clean Desk & Media Handling",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"P","KING IV":"N","SWIFT CSCF":"P","CIS v8.1":"P","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"P","FSCA JS2":"P"}},
+  {d:"Secure Development",id:"SDC-01",n:"Secure SDLC / DevSecOps",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Secure Development",id:"SDC-02",n:"Change & Release Management",m:{GDPR:"N","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Secure Development",id:"SDC-03",n:"Code Review & Testing",m:{GDPR:"N","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"N","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"N","PCI DSS v4.1":"Y","POPIA":"N","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Audit & Compliance",id:"AUD-01",n:"Internal Audit Programme",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"P","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"P","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Audit & Compliance",id:"AUD-02",n:"External / Independent Audit",m:{GDPR:"P","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"N","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"N","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"P","FSCA JS1":"Y","FSCA JS2":"Y"}},
+  {d:"Audit & Compliance",id:"AUD-03",n:"Continuous Compliance Monitoring",m:{GDPR:"Y","SOC2 T1":"Y","SOC2 T2":"Y","ISO 27001":"Y","NIST CSF":"Y","COBIT 5":"Y","KING IV":"Y","SWIFT CSCF":"Y","CIS v8.1":"Y","ISO 22301":"Y","PCI DSS v4.1":"Y","POPIA":"Y","FSCA JS1":"Y","FSCA JS2":"Y"}}
+];
+
+const DOMAINS = [...new Set(CONTROLS.map(c => c.d))];
+
+function hasControl(ctrl, fw) {
+  const v = ctrl.m[fw]; return v === "Y" || v === "P";
+}
+
+function compute(f1, f2) {
+  const only1 = [], only2 = [], shared = [];
+  CONTROLS.forEach(c => {
+    const a = hasControl(c, f1), b = hasControl(c, f2);
+    if (a && b) shared.push(c);
+    else if (a) only1.push(c);
+    else if (b) only2.push(c);
+  });
+  return { only1, only2, shared };
+}
+
+function groupByDomain(arr) {
+  const g = {};
+  arr.forEach(c => { (g[c.d] = g[c.d]||[]).push(c); });
+  return g;
+}
+
+function renderList(el, arr, tagClass) {
+  el.innerHTML = '';
+  if (!arr.length) {
+    el.innerHTML = '<div class="empty-msg">No controls in this section</div>';
+    return;
+  }
+  const g = groupByDomain(arr);
+  Object.entries(g).forEach(([domain, ctrls]) => {
+    const db = document.createElement('div');
+    db.className = 'domain-block';
+    const dl = document.createElement('div');
+    dl.className = 'domain-label';
+    dl.textContent = domain;
+    db.appendChild(dl);
+    const tags = document.createElement('div');
+    tags.className = 'ctrl-tags';
+    ctrls.forEach(c => {
+      const t = document.createElement('span');
+      t.className = `ctrl-tag ${tagClass}`;
+      t.textContent = c.id;
+      const tip = document.createElement('div');
+      tip.className = 'tooltip';
+      tip.textContent = c.n;
+      t.appendChild(tip);
+      tags.appendChild(t);
+    });
+    db.appendChild(tags);
+    el.appendChild(db);
+  });
+}
+
+function drawVenn(f1, f2, n1, nO, n2) {
+  const canvas = document.getElementById('venn');
+  const W = canvas.parentElement.offsetWidth - 48;
+  canvas.width = W;
+  canvas.height = 240;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, 240);
+
+  const total = n1 + nO + n2 || 1;
+  const maxR = Math.min(W * 0.28, 100), minR = 40;
+  const r1 = Math.max(minR, Math.round(maxR * Math.sqrt((n1 + nO) / total)));
+  const r2 = Math.max(minR, Math.round(maxR * Math.sqrt((n2 + nO) / total)));
+  const cx = W / 2, cy = 115;
+  const spread = Math.round((r1 + r2) * 0.6);
+  const cx1 = cx - spread / 2, cx2 = cx + spread / 2;
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  ctx.globalAlpha = 0.38;
+  ctx.beginPath(); ctx.arc(cx1, cy, r1, 0, Math.PI * 2);
+  ctx.fillStyle = '#378ADD'; ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx2, cy, r2, 0, Math.PI * 2);
+  ctx.fillStyle = '#EF9F27'; ctx.fill();
+
+  ctx.globalAlpha = 0.6;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx2, cy, r2, 0, Math.PI * 2); ctx.clip();
+  ctx.beginPath(); ctx.arc(cx1, cy, r1, 0, Math.PI * 2);
+  ctx.fillStyle = '#1D9E75'; ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx1, cy, r1, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx2, cy, r2, 0, Math.PI * 2); ctx.stroke();
+
+  const tc = isDark ? '#f0f0ec' : '#1a1a18';
+  const mc = isDark ? 'rgba(240,240,236,0.6)' : 'rgba(26,26,24,0.5)';
+  ctx.textAlign = 'center';
+
+  function drawCount(x, y, count) {
+    ctx.fillStyle = tc;
+    ctx.font = '600 18px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(count, x, y);
+    ctx.fillStyle = mc;
+    ctx.font = '400 11px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText('controls', x, y + 16);
+  }
+
+  if (n1 > 0) drawCount(cx1 - r1 * 0.5, cy - 4, n1);
+  if (nO > 0) drawCount(cx, cy - 4, nO);
+  if (n2 > 0) drawCount(cx2 + r2 * 0.5, cy - 4, n2);
+
+  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = isDark ? '#85B7EB' : '#185FA5';
+  ctx.fillText(FW_DISPLAY[f1], cx1, cy + r1 + 22);
+  ctx.fillStyle = isDark ? '#EF9F27' : '#854F0B';
+  ctx.fillText(FW_DISPLAY[f2], cx2, cy + r2 + 22);
+}
+
+function renderDomainBars(f1, f2) {
+  const container = document.getElementById('domain-bars');
+  container.innerHTML = '';
+  DOMAINS.forEach(d => {
+    const ctrls = CONTROLS.filter(c => c.d === d);
+    const total = ctrls.length;
+    const a1 = ctrls.filter(c => hasControl(c, f1) && !hasControl(c, f2)).length;
+    const aO = ctrls.filter(c => hasControl(c, f1) && hasControl(c, f2)).length;
+    const a2 = ctrls.filter(c => !hasControl(c, f1) && hasControl(c, f2)).length;
+    const pct1 = Math.round(a1/total*100), pctO = Math.round(aO/total*100), pct2 = Math.round(a2/total*100);
+
+    const row = document.createElement('div');
+    row.className = 'domain-row';
+    row.innerHTML = `
+      <div class="domain-name" title="${d}">${d}</div>
+      <div class="bar-track">
+        <div class="bar-seg" style="width:${pct1}%;background:#378ADD;opacity:0.55;" title="${a1} A-only"></div>
+        <div class="bar-seg" style="width:${pctO}%;background:#1D9E75;opacity:0.75;" title="${aO} shared"></div>
+        <div class="bar-seg" style="width:${pct2}%;background:#EF9F27;opacity:0.55;" title="${a2} B-only"></div>
+      </div>
+      <div class="bar-label">${aO}/${total}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+function update() {
+  const f1 = document.getElementById('fw1').value;
+  const f2 = document.getElementById('fw2').value;
+  const { only1, only2, shared } = compute(f1, f2);
+  const total = only1.length + only2.length + shared.length;
+  const pct = total ? Math.round(shared.length / total * 100) : 0;
+
+  document.getElementById('lbl1').textContent = FW_DISPLAY[f1] + ' only';
+  document.getElementById('lbl2').textContent = FW_DISPLAY[f2] + ' only';
+  document.getElementById('only1').textContent = only1.length;
+  document.getElementById('shared').textContent = shared.length;
+  document.getElementById('only2').textContent = only2.length;
+  document.getElementById('pct').textContent = pct + '%';
+  document.getElementById('title1').textContent = FW_DISPLAY[f1] + ' only';
+  document.getElementById('title2').textContent = FW_DISPLAY[f2] + ' only';
+  document.getElementById('leg1').textContent = FW_DISPLAY[f1];
+  document.getElementById('leg2').textContent = FW_DISPLAY[f2];
+
+  drawVenn(f1, f2, only1.length, shared.length, only2.length);
+  renderList(document.getElementById('list1'), only1, 'tag-blue');
+  renderList(document.getElementById('listO'), shared, 'tag-teal');
+  renderList(document.getElementById('list2'), only2, 'tag-amber');
+  renderDomainBars(f1, f2);
+}
+
+// Populate dropdowns
+const sel1 = document.getElementById('fw1');
+const sel2 = document.getElementById('fw2');
+FRAMEWORKS.forEach(fw => {
+  sel1.innerHTML += `<option value="${fw}">${FW_DISPLAY[fw]}</option>`;
+  sel2.innerHTML += `<option value="${fw}">${FW_DISPLAY[fw]}</option>`;
+});
+sel2.value = 'NIST CSF';
+sel1.addEventListener('change', update);
+sel2.addEventListener('change', update);
+window.addEventListener('resize', () => {
+  const f1 = document.getElementById('fw1').value;
+  const f2 = document.getElementById('fw2').value;
+  const { only1, only2, shared } = compute(f1, f2);
+  drawVenn(f1, f2, only1.length, shared.length, only2.length);
+});
+
+update();
+</script>
+</body>
+</html>
